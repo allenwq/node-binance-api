@@ -178,7 +178,11 @@ let api = function Binance( options = {} ) {
         if ( !cb ) return;
         if ( error ) return cb( error, {} );
         if ( response && response.statusCode !== 200 ) return cb( response, {} );
-        return cb( null, JSON.parse( body ) );
+        try {
+            return cb( null, JSON.parse( body ) );
+        } catch (e) {
+            return cb( e, {} )
+        }
     }
 
     const proxyRequest = ( opt, cb ) => request( addProxy( opt ), reqHandler( cb ) );
