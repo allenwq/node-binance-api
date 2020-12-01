@@ -714,11 +714,18 @@ let api = function Binance( options = {} ) {
         if ( Binance.options.verbose ) {
             Binance.options.log( 'CombinedStream: Subscribed to [' + ws.endpoint + '] ' + queryParams );
         }
-        ws.on( 'open', handleSocketOpen.bind( ws, opened_callback ) );
+        let flag = true
+        let startTime = Date.now()
+        ws.on( 'open', handleSocketOpen.bind( ws, false ) );
         ws.on( 'pong', handleSocketHeartbeat );
         ws.on( 'error', handleSocketError );
         ws.on( 'close', handleSocketClose.bind( ws, reconnect ) );
         ws.on( 'message', data => {
+            if (flag && Date.now() - startTime > 4000 && opened_callback) {
+                console.log("snapshot data loaded ...")
+                opened_callback()
+                flag = false
+            }
             try {
                 callback( JSON.parse( data ).data );
             } catch ( error ) {
