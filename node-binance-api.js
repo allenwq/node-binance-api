@@ -59,6 +59,7 @@ let api = function Binance( options = {} ) {
 
     const default_options = {
         recvWindow: 5000,
+        streamWaitTimeMS: 5000,
         useServerTime: false,
         reconnect: true,
         verbose: false,
@@ -89,6 +90,7 @@ let api = function Binance( options = {} ) {
             Binance.options = JSON.parse( file.readFileSync( opt ) );
         } else Binance.options = opt;
         if ( typeof Binance.options.recvWindow === 'undefined' ) Binance.options.recvWindow = default_options.recvWindow;
+        if ( typeof Binance.options.streamWaitTimeMS === 'undefined' ) Binance.options.streamWaitTimeMS = default_options.streamWaitTimeMS;
         if ( typeof Binance.options.useServerTime === 'undefined' ) Binance.options.useServerTime = default_options.useServerTime;
         if ( typeof Binance.options.reconnect === 'undefined' ) Binance.options.reconnect = default_options.reconnect;
         if ( typeof Binance.options.test === 'undefined' ) Binance.options.test = default_options.test;
@@ -721,7 +723,7 @@ let api = function Binance( options = {} ) {
         ws.on( 'error', handleSocketError );
         ws.on( 'close', handleSocketClose.bind( ws, reconnect ) );
         ws.on( 'message', data => {
-            if (flag && Date.now() - startTime > 4000 && opened_callback) {
+            if (flag && Date.now() - startTime > Binance.options.streamWaitTimeMS && opened_callback) {
                 console.log("snapshot data loaded ...")
                 opened_callback()
                 flag = false
@@ -2270,8 +2272,8 @@ let api = function Binance( options = {} ) {
         } else if ( depth.U > context.snapshotUpdateId + 1 ) {
             /* In this case we have a gap between the data of the stream and the snapshot.
              This is an out of sync error, and the connection must be torn down and reconnected. */
-            let msg = 'depthHandler: [' + symbol + '] The depth cache is out of sync.';
-            msg += ' Symptom: Gap between snapshot and first stream data.';
+            let msg = `depthHandler: ${symbol} The depth cache is out of sync.`;
+            msg += ` Symptom: Gap between snapshot and first stream data. depth.U: ${depth.U}, context.UpdateId: ${context.snapshotUpdateId}, diff: ${depth.U-context.snapshotUpdateId}`;
             if ( Binance.options.verbose ) Binance.options.log( msg );
             throw new Error( msg );
         } else if ( depth.u < context.snapshotUpdateId + 1 ) {
